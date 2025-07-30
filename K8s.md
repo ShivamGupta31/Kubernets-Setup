@@ -1,8 +1,10 @@
 1. Disable swap
+
 sudo swapoff -a
 sudo sed -i '/ swap / s/^/#/' /etc/fstab
 
 2. Load kernel modules and set sysctl
+
 cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
 overlay
 br_netfilter
@@ -17,6 +19,7 @@ EOF
 sudo sysctl --system
 
 📦 3. Install containerd (recommended CRI)
+
 sudo apt update && sudo apt install -y containerd
 sudo mkdir -p /etc/containerd
 sudo containerd config default | sudo tee /etc/containerd/config.toml
@@ -28,6 +31,7 @@ sudo systemctl restart containerd
 sudo systemctl enable containerd
 
 🚀 4. Install Kubernetes tools
+
 sudo apt-get update && sudo apt-get install -y apt-transport-https curl gpg
 curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
 echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /" | sudo tee /etc/apt/sources.list.d/kubernetes.list
@@ -36,28 +40,35 @@ sudo apt-get install -y kubelet kubeadm kubectl
 
 🧑‍✈️ On the Master Node Only:
 5. Initialize the cluster
+
 sudo kubeadm init --pod-network-cidr=10.244.0.0/16
 
 6. Set up kubeconfig for regular user
+
 mkdir -p $HOME/.kube
 sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 sudo chown $(id -u):$(id -g) $HOME/.kube/config
 
 7. Install Flannel CNI
+
 kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
 
 8. Get the join command
+
 kubeadm token create --print-join-command
 
 It will look like:
+
 kubeadm join <master-ip>:6443 --token <token> --discovery-token-ca-cert-hash sha256:<hash>
 
 🧑‍💻 On the Worker Node:
 9. Join the cluster
+
 Run the kubeadm join command you got from the master node.
 
 ✅ Final Validation
 On master node:
+
 kubectl get nodes
 kubectl get pods -A
 You should see both master and worker in Ready state.
